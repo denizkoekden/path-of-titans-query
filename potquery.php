@@ -34,7 +34,7 @@ function getservers ($name="", $addr="") {
         return $data;
     }
     else {
-        $data = print ("Please provide at least one parameter e.g. (?name=servername&addr=1.1.2.3)");
+        $data = print ("Please provide at least one parameter e.g. (?name=servername&addr=1.1.2.3) ");
         return $data;
     }
 }
