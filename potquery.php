@@ -18,13 +18,7 @@ function getservers ($name="", $addr="") {
     if (empty($addr) && !empty($name)) {
         $json = file_get_contents("https://servers.alderongames.com/pathOfTitans?filter[name]={$name}&filter[branch]=production&filter[version]=22351&filter[official]=0&filter[platform]=mac&page=0");
         $array_data = json_decode($json, true);
-        foreach($array_data['data'] as $i => $item) {
-            echo $array[$i]['id'];
-            echo $array[$i]['name'];
-        
-            // $array[$i] is same as $item
-        }
-        //$data = print("<pre>".print_r($array_data,true)."</pre>");
+        $data = print("<pre>".print_r($array_data,true)."</pre>");
         return $data;
     }
     else if (!empty($addr) && empty($name)) {
