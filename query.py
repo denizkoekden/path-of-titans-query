@@ -1,6 +1,27 @@
 import urllib.request
 import json
 from argparse import ArgumentParser
+from termcolor import colored
+
+
+def format_serverdata(data, indent=0):
+    result = ""
+    for item in data:
+        if isinstance(item, list):
+            result += format_serverdata(item, indent+1)
+        elif isinstance(item, dict):
+            for key, value in item.items():
+                if isinstance(value, dict):
+                    result += " " * 4 * indent + colored(f"{key}: ", "white", attrs=["bold"])
+                    result += format_serverdata([value], indent+1)
+                elif isinstance(value, list):
+                    result += " " * 4 * indent + colored(f"{key}: ", "white", attrs=["bold"])
+                    result += format_serverdata(value, indent+1)
+                else:
+                    result += " " * 4 * indent + colored(f"{key}: {value}", "white", attrs=["bold"]) + "\n"
+        else:
+            result += " " * 4 * indent + colored(item, "red", attrs=["bold"]) + "\n"
+    return result
 
 
 def get_servers(name=None, address=None, branch="production", official="0", platform="mac", page="0"):
@@ -15,10 +36,6 @@ def get_servers(name=None, address=None, branch="production", official="0", plat
     with urllib.request.urlopen(url) as url:
         if url.getcode() == 200:
             serverdata = json.load(url)
-            if "data" in serverdata:
-                serverdata = {"data": serverdata["data"]}
-            else:
-                serverdata = {"data": []}
             return serverdata
         else:
             raise ValueError(f"Failed to retrieve server data (status code {url.getcode()}).")
@@ -42,7 +59,7 @@ if __name__ == "__main__":
     try:
         servers = get_servers(name=args.name, address=args.address, branch=args.branch,
                               official=args.official, platform=args.platform, page=args.page)
-        print(json.dumps(servers, indent=4))
-        print("INFO: Wait 5-9 seconds until your next query.")
+        print(format_serverdata(servers["data"]))
+        print(colored("INFO: Wait 5-9 seconds until your next query.", "cyan"))
     except ValueError as e:
-        print(f"ERROR: {e}")
+        print(colored(f"ERROR: {e}", "red"))
