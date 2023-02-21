@@ -1,41 +1,48 @@
-import urllib.request, json
+import urllib.request
+import json
 from argparse import ArgumentParser
 
 
-def getbyname(name, branch="production", version="22351", official="0", platform="mac", page="0"):
-  with urllib.request.urlopen("https://servers.alderongames.com/pathOfTitans?filter[name]=" +name+ "&filter[branch]=" +branch+ "&filter[version]=" +version+ "&filter[official]="+official+"&filter[platform]="+platform+"&page="+page) as url:
-    serverdata = json.load(url)
-  return serverdata
-
-def getbyaddr(addr, branch="production", version="22351", official="0", platform="mac", page="0"):
-  with urllib.request.urlopen("https://servers.alderongames.com/pathOfTitans?filter[ip_address]=" +addr+ "&filter[branch]=" +branch+ "&filter[version]=" +version+ "&filter[official]="+official+"&filter[platform]="+platform+"&page="+page) as url:
-    serverdata = json.load(url)
-  return serverdata
-
-parser = ArgumentParser()
-parser.add_argument("-n", "--name", dest="name",
-                    help="Get Serers by Name", metavar="NAME")
-parser.add_argument("-ip", "--address", dest="address",
-                    help="Get Servers by IP-Address", metavar="ADDRESS")
-  
-args = parser.parse_args()
-
-name = ((vars(args)['name']))
-address = ((vars(args)['address']))
-
-if name and address:
-  print ("Only one Argument per query is support ATM")
-  exit()
-
-if name:
-  parsed = getbyname(name)
-  print(json.dumps(parsed, indent=4)+"\t\n")
-  print ("INFO: wait 5-9 Secs till your next query...")
-
-if address:
-  parsed = getbyaddr(address)
-  print(json.dumps(parsed, indent=4)+"\t\n")
-  print ("INFO: wait 5-9 Secs till your next query...")
+def get_servers(name=None, address=None, branch="production", official="0", platform="mac", page="0"):
+    if name is not None and address is not None:
+        raise ValueError("Only one argument per query is supported.")
+    if name is not None:
+        url = f"https://servers.alderongames.com/pathOfTitans?filter[name]={name}&filter[branch]={branch}&filter[official]={official}&filter[platform]={platform}&page={page}"
+    elif address is not None:
+        url = f"https://servers.alderongames.com/pathOfTitans?filter[ip_address]={address}&filter[branch]={branch}&filter[official]={official}&filter[platform]={platform}&page={page}"
+    else:
+        raise ValueError("Must provide either name or address.")
+    with urllib.request.urlopen(url) as url:
+        if url.getcode() == 200:
+            serverdata = json.load(url)
+            if "data" in serverdata:
+                serverdata = {"data": serverdata["data"]}
+            else:
+                serverdata = {"data": []}
+            return serverdata
+        else:
+            raise ValueError(f"Failed to retrieve server data (status code {url.getcode()}).")
 
 
-
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("-n", "--name", dest="name",
+                        help="Get servers by name", metavar="NAME")
+    parser.add_argument("-ip", "--address", dest="address",
+                        help="Get servers by IP address", metavar="ADDRESS")
+    parser.add_argument("-b", "--branch", dest="branch", default="production",
+                        help="Filter by branch (default: production)", metavar="BRANCH")
+    parser.add_argument("-o", "--official", dest="official", default="0",
+                        help="Filter by official (default: 0)", metavar="OFFICIAL")
+    parser.add_argument("-p", "--platform", dest="platform", default="mac",
+                        help="Filter by platform (default: mac)", metavar="PLATFORM")
+    parser.add_argument("-pg", "--page", dest="page", default="0",
+                        help="Page of results to retrieve (default: 0)", metavar="PAGE")
+    args = parser.parse_args()
+    try:
+        servers = get_servers(name=args.name, address=args.address, branch=args.branch,
+                              official=args.official, platform=args.platform, page=args.page)
+        print(json.dumps(servers, indent=4))
+        print("INFO: Wait 5-9 seconds until your next query.")
+    except ValueError as e:
+        print(f"ERROR: {e}")
